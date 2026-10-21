@@ -25,25 +25,25 @@ void main() {
     expect(find.text('Xe buýt TP.HCM trong túi bạn'), findsOneWidget);
     await t.tap(find.text('Bỏ qua'));
     await t.pumpAndSettle();
-    expect(find.text('Xe buýt Sài Gòn'), findsWidgets);
-    expect(find.text('A1 - A4'), findsOneWidget);
+    expect(find.text('Bạn muốn đi đâu?'), findsOneWidget);
+    expect(find.text('Trạm x'), findsWidgets);
   });
 
   testWidgets('tìm tuyến và mở chi tiết, bật yêu thích', (t) async {
-    await t.pumpWidget(await app());
+    await t.pumpWidget(await app(initial: '/routes'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), 'B1');
     await t.pumpAndSettle();
-    expect(find.text('B1 - B5'), findsOneWidget);
-    expect(find.text('A1 - A4'), findsNothing);
-    await t.tap(find.text('B1 - B5'));
+    expect(find.text('B5'), findsOneWidget);
+    expect(find.text('A4'), findsNothing);
+    await t.tap(find.text('B5'));
     await t.pumpAndSettle();
     expect(find.text('Tuyến B'), findsOneWidget);
-    await t.scrollUntilVisible(find.text('Trạm b5'), 200, scrollable: find.byType(Scrollable).last);
-    expect(find.text('Trạm b5'), findsOneWidget);
+    await t.scrollUntilVisible(find.text('Trạm b2'), 200, scrollable: find.byType(Scrollable).last);
+    expect(find.text('Trạm b2'), findsOneWidget);
     await t.tap(find.byTooltip('Yêu thích'));
     await t.pumpAndSettle();
-    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
   });
 
   testWidgets('trạm: ghi báo cáo cộng đồng', (t) async {
@@ -51,7 +51,8 @@ void main() {
     addTearDown(t.view.reset);
     await t.pumpWidget(await app(initial: '/stop/x'));
     await t.pumpAndSettle();
-    expect(find.textContaining('ước tính theo lịch'), findsWidgets);
+    expect(find.text('Dự kiến theo lịch'), findsOneWidget);
+    expect(find.text('Dự kiến'), findsWidgets);
     await t.tap(find.text('Đông'));
     await t.pumpAndSettle();
     expect(find.text('0 phút trước'), findsOneWidget);

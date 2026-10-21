@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/geo.dart';
 import '../../services/location.dart';
+import '../theme.dart';
 
 /// Thanh trạng thái khi đang bật "Đánh thức trước trạm".
 class WakeBanner extends StatelessWidget {
@@ -12,21 +14,36 @@ class WakeBanner extends StatelessWidget {
       listenable: WakeService.instance,
       builder: (context, _) {
         final w = WakeService.instance;
-        final cs = Theme.of(context).colorScheme;
         return AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           child: !w.active
               ? const SizedBox(width: double.infinity)
-              : Material(
-                  color: cs.tertiaryContainer,
-                  child: ListTile(
-                    leading: Icon(Icons.alarm_on, color: cs.onTertiaryContainer),
-                    title: Text('Báo thức xuống trạm: ${w.stopName}'),
-                    subtitle: Text(w.alarm?.lastDistance == null
-                        ? 'Đang chờ tín hiệu GPS…'
-                        : 'Còn ${formatDistance(w.alarm!.lastDistance!)}'),
-                    trailing: TextButton(onPressed: w.stop, child: const Text('Tắt')),
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Material(
+                    color: Brand.amber,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => context.push('/wake'),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+                        child: Row(children: [
+                          const Icon(Icons.alarm_on, color: Brand.ink),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Báo thức: ${w.stopName} · ${w.alarm?.lastDistance == null ? 'chờ GPS…' : 'còn ${formatDistance(w.alarm!.lastDistance!)}'}',
+                              style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          TextButton(onPressed: w.stop, child: const Text('Tắt', style: TextStyle(color: Brand.ink, fontWeight: FontWeight.w800))),
+                        ]),
+                      ),
+                    ),
                   ),
                 ),
         );

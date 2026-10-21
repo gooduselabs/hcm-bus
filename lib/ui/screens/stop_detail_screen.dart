@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/schedule.dart';
 import '../../state/providers.dart';
+import '../theme.dart';
 import '../widgets/bus_map.dart';
 import '../widgets/common.dart';
 import '../widgets/wake_action.dart';
@@ -23,75 +24,136 @@ class StopDetailScreen extends ConsumerWidget {
     ref.watch(reportsProvider);
     final reports = ref.read(reportsProvider.notifier).recentAt(stopId, now);
     final fav = ref.watch(favStopsProvider).contains(stopId);
+    final nearby = [for (final e in data.nearbyStops(stop.pos, radiusM: 400, limit: 8)) if (e.$1.id != stopId) e.$1];
     final t = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(stop.displayName, overflow: TextOverflow.ellipsis),
-        actions: [
-          IconButton(
-            tooltip: 'Yêu thích',
-            onPressed: () => ref.read(favStopsProvider.notifier).toggle(stopId),
-            icon: Icon(fav ? Icons.favorite : Icons.favorite_border, color: fav ? t.colorScheme.error : null),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Brand.amber,
+        foregroundColor: Brand.ink,
         onPressed: () => startWake(context, stop),
-        icon: const Icon(Icons.alarm_add),
-        label: const Text('Báo khi tới trạm'),
+        icon: const Icon(Icons.alarm_add_rounded),
+        label: const Text('Báo khi tới trạm', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SizedBox(height: 180, child: BusMap(highlight: stop.pos)),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-          child: Row(children: [
-            Expanded(child: Text('Xe sắp đến', style: t.textTheme.titleSmall)),
-            Flexible(child: EstimateChip(rt.isRealtime ? rt.sourceLabel : 'Ước tính theo lịch', realtime: rt.isRealtime)),
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: 260,
+          automaticallyImplyLeading: false,
+          backgroundColor: t.colorScheme.surface,
+          titleSpacing: 12,
+          title: Row(children: [
+            GlassIconButton(icon: Icons.arrow_back_rounded, tooltip: 'Quay lại', onPressed: () => context.pop()),
+            const Spacer(),
+            GlassIconButton(
+              icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              tooltip: 'Yêu thích',
+              color: fav ? const Color(0xFFE5484D) : null,
+              onPressed: () => ref.read(favStopsProvider.notifier).toggle(stopId),
+            ),
           ]),
+          flexibleSpace: FlexibleSpaceBar(background: BusMap(highlight: stop.pos, markers: nearby)),
         ),
-        if (routes.isEmpty) const ListTile(title: Text('Chưa có tuyến nào trong dữ liệu')),
-        for (final r in routes)
-          Card(
-            child: ListTile(
-              onTap: () => context.push('/route/${r.id}'),
-              leading: RouteBadge(r.ref, size: 44),
-              title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: FutureBuilder<ArrivalEstimate>(
-                future: rt.arrival(r, stop, now),
-                builder: (_, s) => Text(s.data?.label ?? '…'),
-              ),
-              trailing: const Icon(Icons.chevron_right),
+        SliverToBoxAdapter(
+          child: Transform.translate(
+            offset: const Offset(0, -18),
+            child: Container(
+              decoration: BoxDecoration(color: t.colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+              child: Row(children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: Brand.coral.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(16)),
+                  child: const Icon(Icons.signpost_rounded, color: Brand.coral),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(stop.displayName, style: t.textTheme.titleLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text('${routes.map((r) => r.ref).toSet().length} tuyến dừng tại đây', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  ]),
+                ),
+              ]),
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-          child: Text('Báo cáo của bạn (lưu trên máy)', style: t.textTheme.titleSmall),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final type in ReportType.values)
-              ActionChip(
-                avatar: Icon(type.icon, size: 18),
-                label: Text(type.label),
-                onPressed: () {
-                  ref.read(reportsProvider.notifier).add(UserReport(stopId, routes.isEmpty ? '' : routes.first.ref, type, ref.read(clockProvider)()));
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã ghi nhận: ${type.label}. Cảm ơn bạn!')));
-                },
+        SliverToBoxAdapter(
+          child: SectionHeader('Xe sắp đến',
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              trailing: EstimateChip(rt.isRealtime ? rt.sourceLabel : 'Dự kiến theo lịch', realtime: rt.isRealtime)),
+        ),
+        if (routes.isEmpty) const SliverToBoxAdapter(child: ListTile(title: Text('Chưa có tuyến nào trong dữ liệu'))),
+        SliverList.builder(
+          itemCount: routes.length,
+          itemBuilder: (_, i) {
+            final r = routes[i];
+            return FadeSlideIn(
+              index: i,
+              child: SoftCard(
+                onTap: () => context.push('/route/${r.id}'),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Row(children: [
+                  RouteBadge(r.ref, size: 46),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Đi ${r.to.isNotEmpty ? r.to : r.title}', style: t.textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(r.interval.isEmpty ? 'Không rõ giãn cách' : 'Mỗi ${parseInterval(r.interval)?.$1 ?? '?'}–${parseInterval(r.interval)?.$2 ?? '?'} phút',
+                          style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                    ]),
+                  ),
+                  FutureBuilder<ArrivalEstimate>(
+                    future: rt.arrival(r, stop, now),
+                    builder: (_, s) => s.data == null ? const SizedBox(width: 40) : EstimatePill(s.data!),
+                  ),
+                ]),
               ),
-          ]),
+            );
+          },
         ),
-        for (final r in reports)
-          ListTile(
-            dense: true,
-            leading: Icon(r.type.icon),
-            title: Text(r.type.label),
-            trailing: Text('${now.difference(r.time).inMinutes} phút trước'),
+        SliverToBoxAdapter(
+          child: SectionHeader('Trên trạm thế nào?', trailing: Text('lưu trên máy', style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant))),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              for (final type in ReportType.values)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Pressable(
+                      onTap: () {
+                        ref.read(reportsProvider.notifier).add(UserReport(stopId, routes.isEmpty ? '' : routes.first.ref, type, ref.read(clockProvider)()));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã ghi nhận: ${type.label}. Cảm ơn bạn!')));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(color: t.colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+                        child: Column(children: [
+                          Icon(type.icon, color: const [Brand.green, Color(0xFF1E88E5), Brand.coral, Brand.amber][type.index]),
+                          const SizedBox(height: 4),
+                          Text(type.label, style: t.textTheme.labelMedium, textAlign: TextAlign.center),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
+            ]),
           ),
+        ),
+        SliverList.list(children: [
+          for (final r in reports)
+            ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              leading: Icon(r.type.icon, size: 20),
+              title: Text(r.type.label, style: t.textTheme.bodyMedium),
+              trailing: Text('${now.difference(r.time).inMinutes} phút trước', style: t.textTheme.labelMedium),
+            ),
+        ]),
+        const SliverToBoxAdapter(child: SizedBox(height: 110)),
       ]),
     );
   }

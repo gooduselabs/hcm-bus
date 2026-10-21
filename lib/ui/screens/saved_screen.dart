@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../state/providers.dart';
 import '../widgets/common.dart';
+import '../widgets/stop_card.dart';
 import 'routes_screen.dart';
 
 class SavedScreen extends ConsumerWidget {
@@ -16,31 +17,26 @@ class SavedScreen extends ConsumerWidget {
     final t = Theme.of(context);
     return Scaffold(
       body: CustomScrollView(slivers: [
-        SliverAppBar.large(
-          title: const Text('Của tôi'),
-          actions: [IconButton(tooltip: 'Cài đặt', onPressed: () => context.push('/settings'), icon: const Icon(Icons.settings_outlined))],
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: 120,
+          backgroundColor: t.colorScheme.surface,
+          actions: [IconButton(tooltip: 'Cài đặt', onPressed: () => context.push('/settings'), icon: const Icon(Icons.tune_rounded))],
+          flexibleSpace: FlexibleSpaceBar(
+            titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 14),
+            title: Text('Của tôi', style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          ),
         ),
         if (routes.isEmpty && stops.isEmpty)
           const SliverFillRemaining(
             hasScrollBody: false,
-            child: EmptyState(icon: Icons.favorite_border, title: 'Chưa có mục yêu thích', subtitle: 'Nhấn ♡ ở tuyến hoặc trạm để lưu lại truy cập nhanh.'),
+            child: EmptyState(icon: Icons.favorite_rounded, title: 'Chưa có mục yêu thích', subtitle: 'Nhấn biểu tượng trái tim ở tuyến hoặc trạm để lưu lại, truy cập nhanh mỗi ngày.'),
           ),
-        if (routes.isNotEmpty)
-          SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 4), child: Text('Tuyến yêu thích', style: t.textTheme.titleSmall))),
+        if (stops.isNotEmpty) const SliverToBoxAdapter(child: SectionHeader('Trạm yêu thích')),
+        SliverList.list(children: [for (final s in stops) StopCard(stop: s)]),
+        if (routes.isNotEmpty) const SliverToBoxAdapter(child: SectionHeader('Tuyến yêu thích')),
         SliverList.list(children: [for (final r in routes) RouteTile(route: r, fav: true)]),
-        if (stops.isNotEmpty)
-          SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 4), child: Text('Trạm yêu thích', style: t.textTheme.titleSmall))),
-        SliverList.list(children: [
-          for (final s in stops)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.signpost),
-                title: Text(s.displayName),
-                subtitle: Text('Tuyến ${d.routesAtStop(s.id).map((r) => r.ref).toSet().join(' · ')}'),
-                onTap: () => context.push('/stop/${s.id}'),
-              ),
-            ),
-        ]),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ]),
     );
   }

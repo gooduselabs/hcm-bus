@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hcm_bus/app.dart';
+import 'package:hcm_bus/core/geo.dart';
+import 'package:hcm_bus/services/location.dart';
 import 'package:hcm_bus/state/providers.dart';
 import 'package:hcm_bus/ui/screens/planner_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'helpers.dart';
 
 final now = DateTime(2026, 10, 21, 8, 12);
+
+class _Here extends LocationNotifier {
+  @override
+  LatLon? build() => const LatLon(10.7738, 106.6995);
+}
 
 class _PresetPlan extends PlanInputNotifier {
   @override
@@ -28,10 +35,12 @@ void main() {
   final route01 = d.routes.firstWhere((r) => r.ref == '01').id;
   const shots = <String, String?>{
     'onboarding': null,
+    'home': '/home',
     'routes': '/routes',
     'route_detail': '/route/ROUTE',
     'stop_detail': '/stop/3166133536',
-    'stops_nearby': '/stops',
+    'stops_search': '/stops',
+    'wake': '/wake',
     'planner': '/plan',
     'saved': '/saved',
     'settings': '/settings',
@@ -55,12 +64,21 @@ void main() {
           ]),
         });
         final prefs = await SharedPreferences.getInstance();
+        if (e.key == 'wake') {
+          final st = d.stopById['11757081910']!;
+          WakeService.instance.debugDemo(st.pos, st.displayName, start: 5200, now: 1850);
+        }
+        addTearDown(() {
+          WakeService.instance.alarm = null;
+          WakeService.instance.startDistance = null;
+        });
         await t.pumpWidget(ProviderScope(overrides: [
           prefsProvider.overrideWithValue(prefs),
           busDataProvider.overrideWith((ref) async => d),
           useNativeMapProvider.overrideWithValue(false),
           clockProvider.overrideWithValue(() => now),
           planInputProvider.overrideWith(_PresetPlan.new),
+          locationProvider.overrideWith(_Here.new),
         ], child: HcmBusApp(initialLocation: e.value?.replaceAll('ROUTE', route01))));
         await t.pumpAndSettle();
         await t.pump(const Duration(seconds: 1));

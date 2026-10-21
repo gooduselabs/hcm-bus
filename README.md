@@ -16,12 +16,12 @@ Miễn phí · Không quảng cáo · Chạy offline · Mã nguồn mở · Dữ
 [![Release](https://img.shields.io/github/v/release/gooduselabs/hcm-bus?include_prereleases&label=Release&color=0B9E6E)](https://github.com/gooduselabs/hcm-bus/releases)
 ![No ads](https://img.shields.io/badge/Qu%E1%BA%A3ng%20c%C3%A1o-0-FF5A5F)
 
-<a href="https://github.com/gooduselabs/hcm-bus/releases"><img src="https://img.shields.io/badge/⬇%20Tải%20APK-v0.1.0-0B9E6E?style=for-the-badge" alt="Tải APK" height="44"/></a>
+<a href="https://github.com/gooduselabs/hcm-bus/releases"><img src="https://img.shields.io/badge/⬇%20Tải%20APK-v0.2.0-0B9E6E?style=for-the-badge" alt="Tải APK" height="44"/></a>
 
 </div>
 
 > [!WARNING]
-> **Bản thử nghiệm sớm (v0.1.0, pre-release), chưa kiểm thử trên điện thoại thật.** Logic tìm đường, báo thức và đọc dữ liệu đã có unit test; ảnh màn hình được chụp bằng golden test (bản đồ hiển thị ở chế độ *Sơ đồ offline*). APK ký bằng khóa debug.
+> **Bản thử nghiệm sớm (v0.2.0, pre-release), chưa kiểm thử trên điện thoại thật.** Logic tìm đường, báo thức và đọc dữ liệu đã có unit test; ảnh màn hình được chụp bằng golden test (nền bản đồ là bản đồ tĩnh offline). APK ký bằng khóa debug.
 
 > [!IMPORTANT]
 > **Chưa có giờ xe GPS thời gian thực.** Hiện không có API vị trí xe buýt TP.HCM nào *công khai, có tài liệu và cho phép ứng dụng bên thứ ba dùng lại*. App **không** dùng API riêng của MultiGo, BusMap hay `apicms.ebms.vn`. Giờ "xe sắp đến" là **ước tính theo lịch** (thẻ `interval` + `opening_hours` trên OSM) và luôn được ghi rõ như vậy. Mã nguồn đã có sẵn giao diện `RealtimeProvider` để cắm dữ liệu thật khi có hợp tác chính thức với Trung tâm Quản lý Giao thông công cộng TP.HCM.
@@ -30,15 +30,25 @@ Miễn phí · Không quảng cáo · Chạy offline · Mã nguồn mở · Dữ
 
 ## 📸 Ảnh màn hình
 
-| Danh sách tuyến | Chi tiết tuyến | Trạm & báo cáo |
+| Khám phá (bản đồ) | Chi tiết tuyến | Trạm & xe sắp đến |
 |:---:|:---:|:---:|
-| <img src="docs/screens/routes_light.png" width="240"/> | <img src="docs/screens/route_detail_light.png" width="240"/> | <img src="docs/screens/stop_detail_light.png" width="240"/> |
-| **Tìm đường (tối)** | **Trạm gần bạn (tối)** | **Giới thiệu (tối)** |
-| <img src="docs/screens/planner_dark.png" width="240"/> | <img src="docs/screens/stops_nearby_dark.png" width="240"/> | <img src="docs/screens/onboarding_dark.png" width="240"/> |
-| **Của tôi** | **Chi tiết tuyến (tối)** | **Cài đặt & giấy phép** |
-| <img src="docs/screens/saved_light.png" width="240"/> | <img src="docs/screens/route_detail_dark.png" width="240"/> | <img src="docs/screens/settings_dark.png" width="240"/> |
+| <img src="docs/screens/home_light.png" width="240"/> | <img src="docs/screens/route_detail_light.png" width="240"/> | <img src="docs/screens/stop_detail_light.png" width="240"/> |
+| **Tìm đường** | **Báo thức xuống trạm** | **Danh sách tuyến** |
+| <img src="docs/screens/planner_light.png" width="240"/> | <img src="docs/screens/wake_dark.png" width="240"/> | <img src="docs/screens/routes_light.png" width="240"/> |
+| **Khám phá (tối)** | **Chi tiết tuyến (tối)** | **Tìm đường (tối)** |
+| <img src="docs/screens/home_dark.png" width="240"/> | <img src="docs/screens/route_detail_dark.png" width="240"/> | <img src="docs/screens/planner_dark.png" width="240"/> |
+| **Giới thiệu** | **Của tôi** | **Cài đặt** |
+| <img src="docs/screens/onboarding_light.png" width="240"/> | <img src="docs/screens/saved_light.png" width="240"/> | <img src="docs/screens/settings_dark.png" width="240"/> |
+
+<sub>Ảnh chụp bằng golden test; nền bản đồ trong ảnh là bản đồ tĩnh vẽ từ dữ liệu OSM đóng gói (chế độ offline của app). Khi có mạng, app dùng bản đồ MapLibre + OpenFreeMap.</sub>
 
 ## ✨ Tính năng
+
+**🎨 Thiết kế (v0.2)**
+- Trang chủ dạng bản đồ với bottom sheet kéo được: tìm kiếm, trạm gần bạn kèm viên giờ xe *Dự kiến*, tuyến yêu thích
+- Bảng màu xanh buýt Sài Gòn + cam ấm, phông **Be Vietnam Pro**, số tuyến có màu riêng
+- Lộ trình dạng timeline, thẻ hành trình có thanh thời lượng theo chặng, màn báo thức có vòng tiến độ lớn
+- Thanh kính mờ trên bản đồ, Hero transition, rung phản hồi, hiệu ứng nhấn, chế độ tối tinh chỉnh riêng
 
 **🚌 Tra cứu**
 - 🔎 Tìm tuyến theo số hoặc tên bến, tìm trạm **có dấu hay không dấu** đều được
@@ -67,6 +77,7 @@ Miễn phí · Không quảng cáo · Chạy offline · Mã nguồn mở · Dữ
 |---|---|---|
 | Tuyến, trạm, giờ chạy | [OpenStreetMap](https://www.openstreetmap.org) qua Overpass API (`tools/build_data.py`) | **ODbL 1.0**: © OpenStreetMap contributors |
 | Bản đồ nền | [OpenFreeMap](https://openfreemap.org) (style `liberty` / `dark`), dữ liệu OpenMapTiles | Miễn phí, cho phép dùng trong app ([ToS](https://openfreemap.org/tos/)); ghi công © OpenFreeMap © OpenMapTiles © OSM |
+| Phông chữ | [Be Vietnam Pro](https://github.com/bettergui/BeVietnamPro) | SIL **OFL 1.1** (`assets/fonts/OFL.txt`) |
 | Mã nguồn | Repo này | **MIT** ([LICENSE](LICENSE)) |
 
 Dữ liệu hiện có (ngày 21/10/2026): **352 lượt tuyến** (mỗi chiều tính là một lượt) và **6.694 trạm**, trong vùng TP.HCM mở rộng (gồm Bình Dương, Bà Rịa–Vũng Tàu cũ, và một số tuyến lân cận Đồng Nai/Long An). Dữ liệu này do cộng đồng OSM đóng góp nên **có thể thiếu tuyến, sai thứ tự trạm hoặc lỗi thời**. Hãy sửa trực tiếp trên OpenStreetMap, mọi người cùng được hưởng.
@@ -102,6 +113,7 @@ tools/build_data.py   Overpass → JSON offline
 
 ## 🗺️ Lộ trình
 
+- [x] v0.2: thiết kế lại giao diện (bản đồ làm trang chủ, timeline, thẻ hành trình, màn báo thức)
 - [x] v0.1: tra cứu offline, tìm đường 1 chuyển, đánh thức trước trạm, báo cáo cục bộ
 - [ ] Widget màn hình chính, đọc thông báo bằng giọng nói tiếng Việt
 - [ ] Tải bản đồ offline (trong giới hạn của OpenFreeMap: 3.000 ô/50 MB)

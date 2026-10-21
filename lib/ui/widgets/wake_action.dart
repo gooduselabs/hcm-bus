@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/models.dart';
 import '../../services/location.dart';
@@ -27,6 +28,10 @@ Future<void> startWake(BuildContext context, BusStop stop) async {
   if (radius == null || !context.mounted) return;
   final ok = await WakeService.instance.start(stop.pos, stop.displayName, radiusM: radius);
   if (!context.mounted) return;
+  if (ok) {
+    context.push('/wake');
+    return;
+  }
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Text(ok ? 'Đã bật báo thức cho trạm ${stop.displayName}' : 'Cần quyền vị trí (Luôn cho phép) để báo thức'),
   ));

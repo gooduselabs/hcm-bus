@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/geo.dart';
 import '../../domain/schedule.dart';
 import '../../state/providers.dart';
+import '../theme.dart';
 import '../widgets/bus_map.dart';
 import '../widgets/common.dart';
 import '../widgets/wake_action.dart';
@@ -27,125 +29,173 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
     final fav = ref.watch(favRoutesProvider).contains(route.id);
     final t = Theme.of(context);
     final now = ref.watch(clockProvider)();
-    final first = stops.isEmpty ? null : stops.first;
-    final est = estimateArrival(interval: route.interval, openingHours: route.openingHours, now: now);
+    final color = Brand.routeColor(route.ref);
     final win = parseOpeningHours(route.openingHours);
     final iv = parseInterval(route.interval);
+    // Ước tính tại từng trạm theo quãng đường từ đầu tuyến.
+    final cum = <double>[0];
+    for (var i = 1; i < stops.length; i++) {
+      cum.add(cum.last + distanceM(stops[i - 1].pos, stops[i].pos));
+    }
+    ArrivalEstimate estAt(int i) =>
+        estimateArrival(interval: route.interval, openingHours: route.openingHours, now: now, offsetMin: cum[i] * 1.2 / 5 / 60);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(children: [
-          Hero(tag: 'route-${route.id}', child: RouteBadge(route.ref, size: 40)),
-          const SizedBox(width: 12),
-          Expanded(child: Text('Tuyến ${route.ref}', overflow: TextOverflow.ellipsis)),
-        ]),
-        actions: [
-          IconButton(
-            tooltip: 'Yêu thích',
-            onPressed: () => ref.read(favRoutesProvider.notifier).toggle(route.id),
-            icon: Icon(fav ? Icons.favorite : Icons.favorite_border, color: fav ? t.colorScheme.error : null),
-          ),
-        ],
-      ),
-      body: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SizedBox(height: 260, child: BusMap(line: route.geometry, stops: stops, schematic: _schematic)),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, icon: Icon(Icons.map_outlined), label: Text('Bản đồ')),
-              ButtonSegment(value: true, icon: Icon(Icons.offline_bolt_outlined), label: Text('Sơ đồ offline')),
-            ],
-            selected: {_schematic},
-            onSelectionChanged: (s) => setState(() => _schematic = s.first),
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: 330,
+          automaticallyImplyLeading: false,
+          backgroundColor: t.colorScheme.surface,
+          titleSpacing: 12,
+          title: Row(children: [
+            GlassIconButton(icon: Icons.arrow_back_rounded, tooltip: 'Quay lại', onPressed: () => context.pop()),
+            const Spacer(),
+            GlassIconButton(
+              icon: _schematic ? Icons.map_rounded : Icons.layers_rounded,
+              tooltip: _schematic ? 'Bản đồ' : 'Sơ đồ offline',
+              onPressed: () => setState(() => _schematic = !_schematic),
+            ),
+            const SizedBox(width: 8),
+            GlassIconButton(
+              icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              tooltip: 'Yêu thích',
+              color: fav ? const Color(0xFFE5484D) : null,
+              onPressed: () => ref.read(favRoutesProvider.notifier).toggle(route.id),
+            ),
+          ]),
+          flexibleSpace: FlexibleSpaceBar(
+            collapseMode: CollapseMode.parallax,
+            background: BusMap(line: route.geometry, lineColor: color, stops: stops, schematic: _schematic),
           ),
         ),
-        Card(
-          margin: const EdgeInsets.all(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(route.title, style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: [
-                _Info(Icons.schedule, win?.label ?? (route.openingHours.isEmpty ? 'Chưa rõ giờ' : route.openingHours)),
-                _Info(Icons.repeat, iv == null ? 'Chưa rõ giãn cách' : '${iv.$1}–${iv.$2} phút/chuyến'),
-                _Info(Icons.pin_drop_outlined, '${stops.length} trạm'),
-                if (route.operator.isNotEmpty) _Info(Icons.business, route.operator),
-                if (route.fee.isNotEmpty) _Info(Icons.payments_outlined, route.fee),
+        SliverToBoxAdapter(
+          child: Transform.translate(
+            offset: const Offset(0, -18),
+            child: Container(
+              decoration: BoxDecoration(color: t.colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Hero(tag: 'route-${route.id}', child: RouteBadge(route.ref, size: 58)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Tuyến ${route.ref}', style: t.textTheme.labelLarge?.copyWith(color: color)),
+                      Text(route.title, style: t.textTheme.titleLarge?.copyWith(height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ]),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  _Stat(Icons.schedule_rounded, 'Giờ chạy', win?.label ?? 'Chưa rõ'),
+                  _Stat(Icons.repeat_rounded, 'Giãn cách', iv == null ? 'Chưa rõ' : '${iv.$1}–${iv.$2} phút'),
+                  _Stat(Icons.place_rounded, 'Số trạm', '${stops.length}'),
+                ]),
+                if (route.operator.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Icon(Icons.business_rounded, size: 16, color: t.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(route.operator, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  ]),
+                ],
               ]),
-              const SizedBox(height: 12),
-              if (first != null) Text('Tại đầu tuyến (${first.displayName}):', style: t.textTheme.labelLarge),
-              const SizedBox(height: 4),
-              EstimateChip(est.label),
-            ]),
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-          child: Text('Các trạm dừng', style: t.textTheme.titleSmall),
+        SliverToBoxAdapter(
+          child: SectionHeader('Lộ trình', padding: const EdgeInsets.fromLTRB(20, 0, 20, 8), trailing: const EstimateChip('Dự kiến theo lịch, không phải GPS')),
         ),
-        for (var i = 0; i < stops.length; i++)
-          _StopRow(
-            index: i,
-            last: i == stops.length - 1,
+        SliverList.builder(
+          itemCount: stops.length,
+          itemBuilder: (_, i) => _TimelineRow(
             name: stops[i].displayName,
+            first: i == 0,
+            last: i == stops.length - 1,
+            color: color,
+            est: estAt(i),
             onTap: () => context.push('/stop/${stops[i].id}'),
             onAlarm: () => startWake(context, stops[i]),
           ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ]),
     );
   }
 }
 
-class _Info extends StatelessWidget {
-  const _Info(this.icon, this.text);
+class _Stat extends StatelessWidget {
+  const _Stat(this.icon, this.label, this.value);
   final IconData icon;
-  final String text;
-  @override
-  Widget build(BuildContext context) => Chip(avatar: Icon(icon, size: 18), label: Text(text), visualDensity: VisualDensity.compact);
-}
-
-class _StopRow extends StatelessWidget {
-  const _StopRow({required this.index, required this.last, required this.name, required this.onTap, required this.onAlarm});
-  final int index;
-  final bool last;
-  final String name;
-  final VoidCallback onTap;
-  final VoidCallback onAlarm;
+  final String label, value;
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final end = index == 0 || last;
+    final t = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
+      decoration: BoxDecoration(color: t.colorScheme.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 18, color: t.colorScheme.primary),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+          Text(value, style: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({required this.name, required this.first, required this.last, required this.color, required this.est, required this.onTap, required this.onAlarm});
+  final String name;
+  final bool first, last;
+  final Color color;
+  final ArrivalEstimate est;
+  final VoidCallback onTap, onAlarm;
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final end = first || last;
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        tapHaptic();
+        onTap();
+      },
       child: IntrinsicHeight(
         child: Row(children: [
-          const SizedBox(width: 28),
+          const SizedBox(width: 24),
           SizedBox(
-            width: 24,
+            width: 28,
             child: Column(children: [
-              Expanded(child: Container(width: 4, color: index == 0 ? Colors.transparent : cs.primary)),
+              Expanded(child: Container(width: 6, decoration: BoxDecoration(color: first ? Colors.transparent : color, borderRadius: BorderRadius.circular(3)))),
               Container(
-                width: end ? 18 : 12,
-                height: end ? 18 : 12,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: end ? cs.primary : cs.surface, border: Border.all(color: cs.primary, width: 3)),
+                width: end ? 22 : 14,
+                height: end ? 22 : 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: end ? color : t.colorScheme.surface,
+                  border: Border.all(color: end ? t.colorScheme.surface : color, width: end ? 4 : 3),
+                  boxShadow: end ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)] : null,
+                ),
               ),
-              Expanded(child: Container(width: 4, color: last ? Colors.transparent : cs.primary)),
+              Expanded(child: Container(width: 6, decoration: BoxDecoration(color: last ? Colors.transparent : color, borderRadius: BorderRadius.circular(3)))),
             ]),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(name, style: TextStyle(fontWeight: end ? FontWeight.w700 : FontWeight.w400)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text(name, style: end ? t.textTheme.titleSmall : t.textTheme.bodyLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (end) Text(first ? 'Đầu tuyến' : 'Cuối tuyến', style: t.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w700)),
+              ]),
             ),
           ),
-          IconButton(tooltip: 'Đánh thức trước trạm này', onPressed: onAlarm, icon: const Icon(Icons.alarm_add_outlined)),
-          const SizedBox(width: 8),
+          if (est.kind == EstimateKind.inService) EstimatePill(est, compact: true),
+          IconButton(tooltip: 'Đánh thức trước trạm này', onPressed: onAlarm, icon: Icon(Icons.alarm_add_rounded, color: t.colorScheme.onSurfaceVariant, size: 22)),
+          const SizedBox(width: 6),
         ]),
       ),
     );

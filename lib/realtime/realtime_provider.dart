@@ -25,7 +25,12 @@ class ScheduleEstimateProvider implements RealtimeProvider {
   bool get isRealtime => false;
 
   @override
-  Future<ArrivalEstimate> arrival(BusRoute route, BusStop stop, DateTime now) async {
+  Future<ArrivalEstimate> arrival(BusRoute route, BusStop stop, DateTime now) async =>
+      scheduleEstimate(data, route, stop, now);
+}
+
+/// Ước tính đồng bộ theo lịch OSM (dùng cho danh sách).
+ArrivalEstimate scheduleEstimate(BusData data, BusRoute route, BusStop stop, DateTime now) {
     final stops = data.stopsOf(route);
     var dist = 0.0;
     for (var i = 1; i < stops.length; i++) {
@@ -38,7 +43,6 @@ class ScheduleEstimateProvider implements RealtimeProvider {
       now: now,
       offsetMin: dist * 1.2 / 5.0 / 60,
     );
-  }
 }
 
 /// Dữ liệu giả cho demo/test. KHÔNG bật trong bản phát hành.

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'state/providers.dart';
+import 'ui/screens/explore_screen.dart';
 import 'ui/screens/home_shell.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/planner_screen.dart';
@@ -13,24 +14,27 @@ import 'ui/screens/saved_screen.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/screens/stop_detail_screen.dart';
 import 'ui/screens/stops_screen.dart';
+import 'ui/screens/wake_screen.dart';
 import 'ui/theme.dart';
 import 'ui/widgets/splash_view.dart';
 
 GoRouter buildRouter({required bool onboarded, String? initial}) => GoRouter(
-      initialLocation: initial ?? (onboarded ? '/routes' : '/welcome'),
+      initialLocation: initial ?? (onboarded ? '/home' : '/welcome'),
       routes: [
         GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
         StatefulShellRoute.indexedStack(
           builder: (_, _, shell) => HomeShell(shell: shell),
           branches: [
+            StatefulShellBranch(routes: [GoRoute(path: '/home', builder: (_, _) => const ExploreScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/routes', builder: (_, _) => const RoutesScreen())]),
-            StatefulShellBranch(routes: [GoRoute(path: '/stops', builder: (_, _) => const StopsScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/plan', builder: (_, _) => const PlannerScreen())]),
             StatefulShellBranch(routes: [GoRoute(path: '/saved', builder: (_, _) => const SavedScreen())]),
           ],
         ),
         GoRoute(path: '/route/:id', builder: (_, s) => RouteDetailScreen(routeId: s.pathParameters['id']!)),
         GoRoute(path: '/stop/:id', builder: (_, s) => StopDetailScreen(stopId: s.pathParameters['id']!)),
+        GoRoute(path: '/stops', builder: (_, _) => const StopsScreen()),
+        GoRoute(path: '/wake', builder: (_, _) => const WakeScreen()),
         GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       ],
     );

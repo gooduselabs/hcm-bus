@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/geo.dart';
 import '../../data/models.dart';
 import '../../services/location.dart';
 import '../../state/providers.dart';
 import '../widgets/common.dart';
+import '../widgets/stop_card.dart';
 
 class StopsScreen extends ConsumerStatefulWidget {
   const StopsScreen({super.key});
@@ -40,7 +40,7 @@ class _StopsScreenState extends ConsumerState<StopsScreen> {
         : [for (final s in d.searchStops(_q)) (s, loc == null ? null : distanceM(loc, s.pos))];
     return Scaffold(
       body: CustomScrollView(slivers: [
-        const SliverAppBar.large(title: Text('Trạm dừng')),
+        const SliverAppBar(pinned: true, title: Text('Tìm trạm')),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -52,7 +52,8 @@ class _StopsScreenState extends ConsumerState<StopsScreen> {
         ),
         if (_q.isEmpty)
           SliverToBoxAdapter(
-            child: Card(
+            child: SoftCard(
+              padding: EdgeInsets.zero,
               color: t.colorScheme.primaryContainer,
               child: ListTile(
                 leading: _locating
@@ -71,19 +72,7 @@ class _StopsScreenState extends ConsumerState<StopsScreen> {
             itemCount: items.length,
             itemBuilder: (_, i) {
               final (s, dist) = items[i];
-              final refs = d.routesAtStop(s.id).map((r) => r.ref).toSet().take(8).join(' · ');
-              return FadeSlideIn(
-                index: i,
-                child: Card(
-                  child: ListTile(
-                    onTap: () => context.push('/stop/${s.id}'),
-                    leading: CircleAvatar(backgroundColor: t.colorScheme.secondaryContainer, child: Icon(Icons.signpost_outlined, color: t.colorScheme.onSecondaryContainer)),
-                    title: Text(s.displayName),
-                    subtitle: Text(refs.isEmpty ? 'Không rõ tuyến' : 'Tuyến $refs'),
-                    trailing: dist == null ? null : Text(formatDistance(dist), style: t.textTheme.labelLarge),
-                  ),
-                ),
-              );
+              return FadeSlideIn(index: i, child: StopCard(stop: s, distance: dist, maxRoutes: 2));
             },
           ),
       ]),
