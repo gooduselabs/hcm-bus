@@ -19,3 +19,5 @@ BusData toyData() {
     BusRoute(id: 'B', ref: 'B', name: 'B1 - B5', stopIds: const ['b1', 'b2', 'x', 'b4', 'b5'], interval: '00:15'),
   ]);
 }
+
+String realDataText() => File('assets/data/hcm_bus.json').readAsStringSync();

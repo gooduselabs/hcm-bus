@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'boot.dart';
 import 'state/providers.dart';
 import 'ui/screens/explore_screen.dart';
 import 'ui/screens/home_shell.dart';
@@ -65,7 +66,7 @@ class _HcmBusAppState extends ConsumerState<HcmBusApp> {
       builder: (context, child) => Consumer(
         builder: (context, ref, _) => ref.watch(busDataProvider).when(
               data: (_) => child!,
-              error: (e, _) => Material(child: Center(child: Text('Lỗi dữ liệu: $e'))),
+              error: (e, _) => BootErrorView(error: e, onRetry: () => ref.invalidate(busDataProvider)),
               loading: () => const SplashView(),
             ),
       ),

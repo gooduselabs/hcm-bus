@@ -65,7 +65,7 @@ class SettingsScreen extends ConsumerWidget {
             style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
             icon: const Icon(Icons.description_outlined),
             label: const Text('Giấy phép phần mềm mã nguồn mở'),
-            onPressed: () => showLicensePage(context: context, applicationName: 'Buýt Sài Gòn', applicationVersion: '0.2.0'),
+            onPressed: () => showLicensePage(context: context, applicationName: 'Buýt Sài Gòn', applicationVersion: '0.2.1'),
           ),
         ),
       ]),

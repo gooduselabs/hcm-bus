@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,10 +15,24 @@ import '../realtime/realtime_provider.dart';
 /// Ghi đè trong main() sau khi SharedPreferences sẵn sàng.
 final prefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError());
 
+/// Nạp + parse JSON lớn trên isolate phụ (compute) để không chặn UI; có
+/// timeout và KHÔNG tự retry (Riverpod 3 mặc định retry vô hạn, khiến lỗi bị
+/// che thành "đang tải" mãi mãi).
 final busDataProvider = FutureProvider<BusData>((ref) async {
-  final txt = await rootBundle.loadString('assets/data/hcm_bus.json');
-  return BusData.parse(txt);
-});
+  final sw = Stopwatch()..start();
+  try {
+    final bytes = await rootBundle.load('assets/data/hcm_bus.json').timeout(const Duration(seconds: 15));
+    final data = await compute(_parseBytes, bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes))
+        .timeout(const Duration(seconds: 25));
+    debugPrint('[hcm_bus] data ready: ${data.routes.length} routes in ${sw.elapsedMilliseconds} ms');
+    return data;
+  } catch (e, st) {
+    debugPrint('[hcm_bus] data load failed: $e\n$st');
+    rethrow;
+  }
+}, retry: (_, _) => null);
+
+BusData _parseBytes(Uint8List b) => BusData.parse(utf8.decode(b));
 
 /// Đổi sang provider của đối tác chính thức khi có (xem realtime_provider.dart).
 final realtimeProvider = Provider<RealtimeProvider>((ref) {
