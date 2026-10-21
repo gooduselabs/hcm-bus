@@ -35,6 +35,11 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 làm hỏng plugin Pigeon (shared_preferences: NoSuchMethodError, kotlin.Result bị xoá)
+            // -> tắt thu gọn mã cho tới khi có bộ keep-rule được kiểm chứng.
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
